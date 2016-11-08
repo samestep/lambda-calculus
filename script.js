@@ -1,20 +1,27 @@
 (function() {
+  /** Returns outer with slice(start, end) replaced by inner. */
   function splice(outer, inner, start, end) {
     return outer.slice(0, start)
       + inner
       + outer.slice(typeof end === 'undefined' ? start : end);
   }
 
+  /** Returns true if before with one insertion at index is equal to after. */
   function singleAddition(before, after, index) {
     return before.length + 1 === after.length
       && before.slice(0, index) === after.slice(0, index)
       && before.slice(index) === after.slice(index + 1);
   }
 
+  /** Returns true if before with one deletion at index is equal to after. */
   function singleDeletion(before, after, index) {
     return singleAddition(after, before, index);
   }
 
+  /**
+   * Returns the index of the closing parenthesis in string to match an opening
+   * parenthesis at start.
+   */
   function match(string, start) {
     var count = 0;
     for (var i = start + 1; i < string.length; ++i) {
@@ -31,6 +38,11 @@
     return -1;
   }
 
+  /**
+   * Returns a version of after with backslashes replaced by lambdas and
+   * parentheses balanced, given the index of the cursor and the previous,
+   * balanced, state.
+   */
   function correct(before, after, index) {
     if (singleAddition(before, after, index - 1)) {
       switch (after[index - 1]) {
@@ -67,6 +79,10 @@
     }
   }
 
+  /**
+   * Returns the value, selectionStart, and selectionEnd of textArea as an
+   * object with text, start, and end keys.
+   */
   function poll(textArea) {
     return {
       text: textArea.value,
@@ -75,12 +91,20 @@
     };
   }
 
+  /**
+   * Sets the value, selectionStart, and selectionEnd of textArea using the
+   * text, start, and end properties of state.
+   */
   function update(textArea, state) {
     textArea.value = state.text;
     textArea.selectionStart = state.start;
     textArea.selectionEnd = state.end;
   }
 
+  /**
+   * Configures textArea to replace backslashes with lambdas and keep
+   * parentheses balanced.
+   */
   function smart(textArea) {
     var previous = poll(textArea);
     textArea.addEventListener('input', function() {
