@@ -1,0 +1,34 @@
+body {
+  background: lightgray;
+  margin: 0;
+}
+
+.left, .right {
+  height: 100%;
+  position: absolute;
+  width: 50%;
+}
+
+.left {
+  left: 0;
+}
+
+.right {
+  right: 0;
+}
+
+.inner {
+  bottom: 0;
+  left: 0;
+  margin: .5em;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+#input, #output {
+  border: .1em solid silver;
+  height: 100%;
+  resize: none;
+  width: 100%;
+}
