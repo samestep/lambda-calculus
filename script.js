@@ -20,7 +20,7 @@
 
   /**
    * Returns the index of the closing parenthesis in string to match an opening
-   * parenthesis at start.
+   * parenthesis at start, or -1 if no matching parenthesis is found.
    */
   function match(string, start) {
     var count = 0;
