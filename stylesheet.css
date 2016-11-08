@@ -28,6 +28,7 @@ body {
 
 #input, #output {
   border: .1em solid silver;
+  font-family: monospace;
   height: 100%;
   resize: none;
   width: 100%;
