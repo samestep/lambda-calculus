@@ -18,6 +18,22 @@
     return singleAddition(after, before, index);
   }
 
+  /** Returns true if the parentheses in string are balanced. */
+  function balanced(string) {
+    var count = 0;
+    for (var i = 0; i < string.length; ++i) {
+      if (string[i] === '(') {
+        ++count;
+      } else if (string[i] === ')') {
+        --count;
+        if (count < 0) {
+          return false;
+        }
+      }
+    }
+    return count === 0;
+  }
+
   /**
    * Returns the index of the closing parenthesis in string to match an opening
    * parenthesis at start, or -1 if no matching parenthesis is found.
@@ -74,6 +90,8 @@
       default:
         return {text: after, index: index};
       }
+    } else if (balanced(after)) {
+      return {text: after.replace(/\\/g, 'λ'), index: index};
     } else {
       return {text: before, index: before.length - (after.length - index)};
     }
