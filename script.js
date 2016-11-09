@@ -202,12 +202,32 @@
     });
   }
 
+  /** Returns the form without its parse metadata. */
+  function compress(form) {
+    switch (form.type) {
+    case 'atom':
+      return form.value;
+    case 'list':
+      return form.value.map(compress);
+    default:
+      return form;
+    }
+  }
+
+  /**
+   * Parses and compresses all forms in the string, pretty-prints them as JSON,
+   * and returns the result.
+   */
+  function restringify(string) {
+    return JSON.stringify(parseAll(string).map(compress), null, 2);
+  }
+
   var input = document.getElementById('input');
   var output = document.getElementById('output');
   smart(input);
-  output.value = JSON.stringify(parseAll(input.value), null, 2);
+  output.value = restringify(input.value);
   input.addEventListener('input', function() {
-    output.value = JSON.stringify(parseAll(input.value), null, 2);
+    output.value = restringify(input.value);
   });
   input.readOnly = false;
 })();
