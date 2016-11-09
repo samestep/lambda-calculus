@@ -202,32 +202,109 @@
     });
   }
 
-  /** Returns the form without its parse metadata. */
-  function compress(form) {
-    switch (form.type) {
-    case 'atom':
-      return form.value;
-    case 'list':
-      return form.value.map(compress);
-    default:
-      return form;
+  /** Returns true if the form is an atom. */
+  function isAtom(form) {
+    return form.type === 'atom';
+  }
+
+  /** Returns true if the form is a list. */
+  function isList(form) {
+    return form.type === 'list';
+  }
+
+  /** Returns true if the form is an atom named lambda. */
+  function isLambda(form) {
+    return isAtom(form) && form.value === 'λ';
+  }
+
+  /** Returns an error AST object for a form with a given message. */
+  function error(form, message) {
+    return {type: 'error', message: message, start: form.start, end: form.end};
+  }
+
+  /** Returns an error or variable AST object for the given form. */
+  function variableTerm(form) {
+    if (!isAtom(form)) {
+      return error(form, 'variable not atom');
+    } else if (isLambda(form)) {
+      return error(form, 'variable named lambda');
+    } else {
+      return {type: 'variable', variable: form.value};
+    }
+  }
+
+  /** Returns an error or lambda abstraction AST Object for the given form. */
+  function abstractionTerm(form) {
+    if (!isList(form) || form.value.length !== 3) {
+      return error(form, 'abstraction not three terms');
+    } else if (!isLambda(form.value[0])) {
+      return error(form.value[0], 'abstraction without lambda');
+    } else if (!isList(form.value[1])) {
+      return error(form.value[1], 'parameters not list');
+    } else if (form.value[1].value.length < 1) {
+      return error(form.value[1], 'empty parameters');
+    } else if (!form.value[1].value.every(isAtom)) {
+      return error(form.value[1], 'list in parameters');
+    } else if (form.value[1].value.some(isLambda)) {
+      return error(form.value[1], 'lambda in parameters');
+    } else {
+      var expr = term(form.value[2]);
+      if (expr.type === 'error') {
+        return expr;
+      } else {
+        return {
+          type: 'abstraction',
+          args: form.value[1].value.map(function(arg) {return arg.value;}),
+          expr: expr
+        };
+      }
+    }
+  }
+
+  /** Returns an error or application AST object for the given form. */
+  function applicationTerm(form) {
+    if (!isList(form) || form.value.length < 2) {
+      return error(form, 'application not at least two terms');
+    } else {
+      var terms = form.value.map(term);
+      for (var i = 0; i < terms.length; ++i) {
+        if (terms[i].type === 'error') {
+          return terms[i];
+        }
+      }
+      return {type: 'application', func: terms[0], args: terms.slice(1)};
+    }
+  }
+
+  /** Returns an AST object for the given form. */
+  function term(form) {
+    if (isAtom(form)) {
+      return variableTerm(form);
+    } else if (form.value.length < 1) {
+      return error(form, 'empty list');
+    } else {
+      if (isLambda(form.value[0])) {
+        return abstractionTerm(form);
+      } else {
+        return applicationTerm(form);
+      }
     }
   }
 
   /**
-   * Parses and compresses all forms in the string, pretty-prints them as JSON,
-   * and returns the result.
+   * Parses all forms in the string, converts the parse trees to ASTs,
+   * pretty-prints them as JSON, and returns the result.
    */
-  function restringify(string) {
-    return JSON.stringify(parseAll(string).map(compress), null, 2);
+  function process(string) {
+    return JSON.stringify(parseAll(string).map(term), null, 2);
   }
 
   var input = document.getElementById('input');
   var output = document.getElementById('output');
   smart(input);
-  output.value = restringify(input.value);
+  output.value = process(input.value);
   input.addEventListener('input', function() {
-    output.value = restringify(input.value);
+    output.value = process(input.value);
   });
   input.readOnly = false;
 })();
