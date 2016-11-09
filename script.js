@@ -6,18 +6,6 @@
       + outer.slice(typeof end === 'undefined' ? start : end);
   }
 
-  /** Returns true if before with one insertion at index is equal to after. */
-  function singleAddition(before, after, index) {
-    return before.length + 1 === after.length
-      && before.slice(0, index) === after.slice(0, index)
-      && before.slice(index) === after.slice(index + 1);
-  }
-
-  /** Returns true if before with one deletion at index is equal to after. */
-  function singleDeletion(before, after, index) {
-    return singleAddition(after, before, index);
-  }
-
   /** Returns true if the parentheses in string are balanced. */
   function balanced(string) {
     var count = 0;
@@ -52,6 +40,18 @@
       }
     }
     return -1;
+  }
+
+  /** Returns true if before with one insertion at index is equal to after. */
+  function singleAddition(before, after, index) {
+    return before.length + 1 === after.length
+      && before.slice(0, index) === after.slice(0, index)
+      && before.slice(index) === after.slice(index + 1);
+  }
+
+  /** Returns true if before with one deletion at index is equal to after. */
+  function singleDeletion(before, after, index) {
+    return singleAddition(after, before, index);
   }
 
   /**
