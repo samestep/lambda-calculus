@@ -42,6 +42,70 @@
     return -1;
   }
 
+  /**
+   * Returns a form parsed from the specified start index in the string, or null
+   * if no forms can be parsed from start.
+   */
+  function parse(string, start) {
+    var index = string.slice(start).search(/\S/);
+    if (index < 0) {
+      return null;
+    } else {
+      var formStart = start + index;
+      switch (string[formStart]) {
+      case ')':
+        return null;
+      case '(':
+        return parseList(string, formStart);
+      default:
+        return parseAtom(string, formStart);
+      }
+    }
+  }
+
+  /** Returns an atom parsed from the specified start index in the string. */
+  function parseAtom(string, start) {
+    var index = string.slice(start).search(/[\s\(\)]/);
+    var end = index < 0 ? string.length : start + index;
+    return {
+      type: 'atom',
+      value: string.slice(start, end),
+      start: start,
+      end: end
+    };
+  }
+
+  /** Returns a list parsed from the specified start index in the string. */
+  function parseList(string, start) {
+    var array = [];
+    var index = start + 1;
+    var next = parse(string, index);
+    while (next !== null) {
+      array.push(next);
+      index = next.end;
+      next = parse(string, index);
+    }
+    return {
+      type: 'list',
+      value: array,
+      start: start,
+      end: match(string, start) + 1
+    };
+  }
+
+  /** Returns an array of parsed forms from the string. */
+  function parseAll(string) {
+    var array = [];
+    var index = 0;
+    var next = parse(string, index);
+    while (next !== null) {
+      array.push(next);
+      index = next.end;
+      next = parse(string, index);
+    }
+    return array;
+  }
+
   /** Returns true if before with one insertion at index is equal to after. */
   function singleAddition(before, after, index) {
     return before.length + 1 === after.length
@@ -142,7 +206,7 @@
   var output = document.getElementById('output');
   smart(input);
   input.addEventListener('input', function() {
-    output.value = input.value;
+    output.value = JSON.stringify(parseAll(input.value), null, 2);
   });
   input.readOnly = false;
 })();
