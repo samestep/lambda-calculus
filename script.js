@@ -205,6 +205,7 @@
   var input = document.getElementById('input');
   var output = document.getElementById('output');
   smart(input);
+  output.value = JSON.stringify(parseAll(input.value), null, 2);
   input.addEventListener('input', function() {
     output.value = JSON.stringify(parseAll(input.value), null, 2);
   });
