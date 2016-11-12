@@ -386,19 +386,16 @@
     switch (term.type) {
     case 'variable':
       return [term.variable];
-      break;
     case 'abstraction':
       return difference(
         freeVariables(term.expr),
         toSet(term.args, compare),
         compare
       );
-      break;
     case 'application':
       return term.args.reduce(function(free, next) {
         return union(free, freeVariables(next), compare);
       }, freeVariables(term.func));
-      break;
     }
   }
 
