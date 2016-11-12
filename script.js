@@ -223,7 +223,7 @@
   }
 
   /** Returns an error or variable AST object for the given form. */
-  function variableTerm(form) {
+  function variableAST(form) {
     if (!isAtom(form)) {
       return error(form, 'variable not atom');
     } else if (isLambda(form)) {
@@ -234,7 +234,7 @@
   }
 
   /** Returns an error or lambda abstraction AST Object for the given form. */
-  function abstractionTerm(form) {
+  function abstractionAST(form) {
     if (!isList(form) || form.value.length < 3) {
       return error(form, 'abstraction not at least three terms');
     } else if (!isLambda(form.value[0])) {
@@ -244,7 +244,7 @@
     } else if (form.value.slice(1, -1).some(isLambda)) {
       return error(form, 'lambda in parameters');
     } else {
-      var expr = term(form.value[form.value.length - 1]);
+      var expr = ast(form.value[form.value.length - 1]);
       if (expr.type === 'error') {
         return expr;
       } else {
@@ -258,11 +258,11 @@
   }
 
   /** Returns an error or application AST object for the given form. */
-  function applicationTerm(form) {
+  function applicationAST(form) {
     if (!isList(form) || form.value.length < 2) {
       return error(form, 'application not at least two terms');
     } else {
-      var terms = form.value.map(term);
+      var terms = form.value.map(ast);
       for (var i = 0; i < terms.length; ++i) {
         if (terms[i].type === 'error') {
           return terms[i];
@@ -273,16 +273,16 @@
   }
 
   /** Returns an AST object for the given form. */
-  function term(form) {
+  function ast(form) {
     if (isAtom(form)) {
-      return variableTerm(form);
+      return variableAST(form);
     } else if (form.value.length < 1) {
       return error(form, 'empty list');
     } else {
       if (isLambda(form.value[0])) {
-        return abstractionTerm(form);
+        return abstractionAST(form);
       } else {
-        return applicationTerm(form);
+        return applicationAST(form);
       }
     }
   }
@@ -292,7 +292,7 @@
    * pretty-prints them as JSON, and returns the result.
    */
   function process(string) {
-    return JSON.stringify(parseAll(string).map(term), null, 2);
+    return JSON.stringify(parseAll(string).map(ast), null, 2);
   }
 
   var input = document.getElementById('input');
