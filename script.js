@@ -235,26 +235,22 @@
 
   /** Returns an error or lambda abstraction AST Object for the given form. */
   function abstractionTerm(form) {
-    if (!isList(form) || form.value.length !== 3) {
-      return error(form, 'abstraction not three terms');
+    if (!isList(form) || form.value.length < 3) {
+      return error(form, 'abstraction not at least three terms');
     } else if (!isLambda(form.value[0])) {
       return error(form.value[0], 'abstraction without lambda');
-    } else if (!isList(form.value[1])) {
-      return error(form.value[1], 'parameters not list');
-    } else if (form.value[1].value.length < 1) {
-      return error(form.value[1], 'empty parameters');
-    } else if (!form.value[1].value.every(isAtom)) {
-      return error(form.value[1], 'list in parameters');
-    } else if (form.value[1].value.some(isLambda)) {
-      return error(form.value[1], 'lambda in parameters');
+    } else if (!form.value.slice(1, -1).every(isAtom)) {
+      return error(form, 'list in parameters');
+    } else if (form.value.slice(1, -1).some(isLambda)) {
+      return error(form, 'lambda in parameters');
     } else {
-      var expr = term(form.value[2]);
+      var expr = term(form.value[form.value.length - 1]);
       if (expr.type === 'error') {
         return expr;
       } else {
         return {
           type: 'abstraction',
-          args: form.value[1].value.map(function(arg) {return arg.value;}),
+          args: form.value.slice(1, -1).map(function(arg) {return arg.value;}),
           expr: expr
         };
       }
