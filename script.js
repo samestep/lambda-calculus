@@ -446,6 +446,86 @@
     }
   }
 
+  /**
+   * Returns an alpha-conversion of the expanded lambda abstraction term using a
+   * different variable name.
+   */
+  function alpha(term, variable) {
+    return {
+      type: 'abstraction',
+      args: [variable],
+      expr: substitute(
+        term.expr,
+        term.args[0],
+        {type: 'variable', variable: variable}
+      )
+    };
+  }
+
+  /**
+   * Returns a possibly mangled version of the variable name that is not present
+   * in the given set of free variables.
+   */
+  function makeFresh(variable, free) {
+    var compare = comparator(function(x, y) {return x < y;});
+    if (binarySearch(free, 0, free.length, variable, compare) < 0) {
+      return variable;
+    } else {
+      var i = 1;
+      while (binarySearch(free, 0, free.length, variable + i, compare) >= 0) {
+        ++i;
+      }
+      return variable + i;
+    }
+  }
+
+  /**
+   * Returns the substitution of the from variable for the to lambda term in the
+   * given expanded lambda term in a capture-avoiding manner.
+   */
+  function substitute(term, from, to) {
+    switch (term.type) {
+    case 'variable':
+      return term.variable === from ? to : term;
+    case 'abstraction':
+      if (term.args[0] === from) {
+        return term;
+      } else {
+        var fresh = makeFresh(term.args[0], freeVariables(to));
+        return {
+          type: 'abstraction',
+          args: [fresh],
+          expr: substitute(alpha(term, fresh).expr, from, to)
+        };
+      }
+    case 'application':
+      return {
+        type: 'application',
+        func: substitute(term.func, from, to),
+        args: term.args.map(function(arg) {return substitute(arg, from, to);})
+      };
+    }
+  }
+
+  /** Returns a beta-reduction of the expanded lambda term. */
+  function beta(term) {
+    switch (term.type) {
+    case 'variable':
+      return term;
+    case 'abstraction':
+      return term;
+    case 'application':
+      switch (term.func.type) {
+      case 'variable':
+        return term;
+      case 'abstraction':
+        return substitute(term.func.expr, term.func.args[0], term.args[0]);
+      case 'application':
+        return {type: 'application', func: beta(term.func), args: term.args};
+      }
+    }
+  }
+
   /** Returns a pretty-printed string version of the lambda term. */
   function pretty(term) {
     switch (term.type) {
@@ -460,32 +540,31 @@
     }
   }
 
-  /**
-   * Parses all forms in the string, converts the parse trees to ASTs,
-   * pretty-prints them as JSON, and returns the result.
-   */
-  function process(string) {
-    return JSON.stringify(parseAll(string).map(function(form) {
-      var term = ast(form);
-      if (term.type === 'error') {
-        return term;
+  /** Configures output to display the running evaluation of input. */
+  function interpreter(input, output) {
+    var previous = '';
+    var evaluation = [];
+    setInterval(function() {
+      var current = input.value;
+      if (previous === current) {
+        evaluation = evaluation.map(function(term) {
+          return term.type === 'error' ? term : beta(term);
+        });
       } else {
-        return {
-          string: pretty(expand(term)),
-          free: freeVariables(term),
-          ast: term,
-          expanded: expand(term),
-        };
+        previous = current;
+        evaluation = parseAll(current).map(ast).map(function(term) {
+          return term.type === 'error' ? term : expand(term);
+        });
       }
-    }), null, 2);
+      output.value = evaluation.map(function(term) {
+        return pretty(term);
+      }).join('\n\n');
+    }, 10);
   }
 
   var input = document.getElementById('input');
   var output = document.getElementById('output');
   smart(input);
-  output.value = process(input.value);
-  input.addEventListener('input', function() {
-    output.value = process(input.value);
-  });
+  interpreter(input, output);
   input.readOnly = false;
 })();
