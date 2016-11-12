@@ -446,6 +446,20 @@
     }
   }
 
+  /** Returns a pretty-printed string version of the lambda term. */
+  function pretty(term) {
+    switch (term.type) {
+    case 'variable':
+      return term.variable;
+    case 'abstraction':
+      return '(λ ' + term.args.join(' ') + ' ' + pretty(term.expr) + ')';
+    case 'application':
+      return '(' + [term.func].concat(term.args).map(pretty).join(' ') + ')';
+    default:
+      return term;
+    }
+  }
+
   /**
    * Parses all forms in the string, converts the parse trees to ASTs,
    * pretty-prints them as JSON, and returns the result.
@@ -453,11 +467,16 @@
   function process(string) {
     return JSON.stringify(parseAll(string).map(function(form) {
       var term = ast(form);
-      if (term.type !== 'error') {
-        term = expand(term);
-        term.free = freeVariables(term);
+      if (term.type === 'error') {
+        return term;
+      } else {
+        return {
+          string: pretty(expand(term)),
+          free: freeVariables(term),
+          ast: term,
+          expanded: expand(term),
+        };
       }
-      return term;
     }), null, 2);
   }
 
