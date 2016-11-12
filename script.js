@@ -557,7 +557,7 @@
         });
       }
       output.value = evaluation.map(function(term) {
-        return pretty(term);
+        return term.type === 'error' ? JSON.stringify(term) : pretty(term);
       }).join('\n\n');
     }, 10);
   }
