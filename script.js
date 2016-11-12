@@ -400,6 +400,53 @@
   }
 
   /**
+   * Returns an equivalent version of term where each abstraction or application
+   * term has exactly one argument.
+   */
+  function expand(term) {
+    switch (term.type) {
+    case 'variable':
+      return term;
+    case 'abstraction':
+      if (term.args.length < 2) {
+        return {
+          type: 'abstraction',
+          args: term.args,
+          expr: expand(term.expr)
+        };
+      } else {
+        return {
+          type: 'abstraction',
+          args: [term.args[0]],
+          expr: expand({
+            type: 'abstraction',
+            args: term.args.slice(1),
+            expr: term.expr
+          })
+        };
+      }
+    case 'application':
+      if (term.args.length < 2) {
+        return {
+          type: 'application',
+          func: expand(term.func),
+          args: [expand(term.args[0])]
+        };
+      } else {
+        return expand({
+          type: 'application',
+          func: {
+            type: 'application',
+            func: term.func,
+            args: [term.args[0]]
+          },
+          args: term.args.slice(1)
+        });
+      }
+    }
+  }
+
+  /**
    * Parses all forms in the string, converts the parse trees to ASTs,
    * pretty-prints them as JSON, and returns the result.
    */
@@ -407,6 +454,7 @@
     return JSON.stringify(parseAll(string).map(function(form) {
       var term = ast(form);
       if (term.type !== 'error') {
+        term = expand(term);
         term.free = freeVariables(term);
       }
       return term;
