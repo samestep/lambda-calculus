@@ -288,11 +288,132 @@
   }
 
   /**
+   * Returns a comparator based on a predicate that returns true if and only if
+   * its first argument is strictly less than its second argument.
+   */
+  function comparator(predicate) {
+    return function(x, y) {
+      if (predicate(x, y)) {
+        return -1;
+      } else if (predicate(y, x)) {
+        return 1;
+      } else {
+        return 0;
+      }
+    };
+  }
+
+  /**
+   * Takes an array in nondecreasing order, inclusive start index, exclusive end
+   * index, target element, and comparator, and returns the index of element in
+   * array, or -1 if it cannot be found.
+   */
+  function binarySearch(array, start, end, element, compare) {
+    var middle = Math.floor((start + end) / 2);
+    if (end <= start) {
+      return -1;
+    } else if (compare(element, array[middle]) < 0) {
+      return binarySearch(array, start, middle, element, compare);
+    } else if (compare(array[middle], element) < 0) {
+      return binarySearch(array, middle + 1, end, element, compare);
+    } else {
+      return middle;
+    }
+  }
+
+  /** Takes an array and comparator and returns the array in ascending order. */
+  function toSet(array, compare) {
+    var sorted = [];
+    for (var i = 0; i < array.length; ++i) {
+      sorted.push(array[i]);
+    }
+    sorted.sort(compare);
+    var result = [];
+    for (var i = 0; i < sorted.length; ++i) {
+      if (result.length < 1
+          || compare(sorted[i], result[result.length - 1]) !== 0) {
+        result.push(sorted[i]);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns the difference between set1 and set2, representing sets as arrays
+   * in ascending order according to a comparator.
+   */
+  function difference(set1, set2, compare) {
+    var result = [];
+    for (var i = 0; i < set1.length; ++i) {
+      if (binarySearch(set2, 0, set2.length, set1[i], compare) < 0) {
+        result.push(set1[i]);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns the union of set1 and set2, representing sets as arrays in
+   * ascending order according to a comparator.
+   */
+  function union(set1, set2, compare) {
+    var result = [];
+    var i = 0;
+    var j = 0;
+    while (i < set1.length && j < set2.length) {
+      var ordering = compare(set1[i], set2[j]);
+      if (ordering < 0) {
+        result.push(set1[i]);
+        ++i;
+      } else if (ordering > 0) {
+        result.push(set2[j]);
+        ++j;
+      } else {
+        result.push(set1[i]);
+        ++i;
+        ++j;
+      }
+    }
+    return result.concat(set1.slice(i), set2.slice(j));
+  }
+
+  /**
+   * Returns the set of free variables of the lambda term as an array in
+   * ascending lexicographical order.
+   */
+  function freeVariables(term) {
+    var compare = comparator(function(x, y) {return x < y;});
+    switch (term.type) {
+    case 'variable':
+      return [term.variable];
+      break;
+    case 'abstraction':
+      return difference(
+        freeVariables(term.expr),
+        toSet(term.args, compare),
+        compare
+      );
+      break;
+    case 'application':
+      return term.args.reduce(function(free, next) {
+        return union(free, freeVariables(next), compare);
+      }, freeVariables(term.func));
+      break;
+    }
+  }
+
+  /**
    * Parses all forms in the string, converts the parse trees to ASTs,
    * pretty-prints them as JSON, and returns the result.
    */
   function process(string) {
-    return JSON.stringify(parseAll(string).map(ast), null, 2);
+    return JSON.stringify(parseAll(string).map(function(form) {
+      var term = ast(form);
+      if (term.type !== 'error') {
+        term.free = freeVariables(term);
+      }
+      return term;
+    }), null, 2);
   }
 
   var input = document.getElementById('input');
