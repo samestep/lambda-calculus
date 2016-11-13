@@ -524,7 +524,9 @@
     case 'abstraction':
       return reducible(term.expr);
     case 'application':
-      return term.func.type === 'abstraction' || reducible(term.func);
+      return term.func.type === 'abstraction'
+        || reducible(term.func)
+        || term.args.some(reducible);
     }
   }
 
@@ -547,6 +549,16 @@
           type: 'application',
           func: reduce(term.func),
           args: term.args
+        };
+      } else if (term.args.some(reducible)) {
+        var args = [];
+        for (var i = 0; i < term.args.length; ++i) {
+          args.push(reduce(term.args[i]));
+        }
+        return {
+          type: 'application',
+          func: term.func,
+          args: args
         };
       } else {
         return term;
