@@ -509,19 +509,47 @@
 
   /** Returns a beta-reduction of the expanded lambda term. */
   function beta(term) {
+    if (term.type === 'application' && term.func.type === 'abstraction') {
+      return substitute(term.func.expr, term.func.args[0], term.args[0]);
+    } else {
+      return term;
+    }
+  }
+
+  /** Returns true if the lambda term can be reduced. */
+  function reducible(term) {
+    switch (term.type) {
+    case 'variable':
+      return false;
+    case 'abstraction':
+      return reducible(term.expr);
+    case 'application':
+      return term.func.type === 'abstraction' || reducible(term.func);
+    }
+  }
+
+  /** Returns the first reduction of the lambda term. */
+  function reduce(term) {
     switch (term.type) {
     case 'variable':
       return term;
     case 'abstraction':
-      return term;
+      return {
+        type: 'abstraction',
+        args: term.args,
+        expr: reduce(term.expr)
+      };
     case 'application':
-      switch (term.func.type) {
-      case 'variable':
+      if (term.func.type === 'abstraction') {
+        return beta(term);
+      } else if (reducible(term.func)) {
+        return {
+          type: 'application',
+          func: reduce(term.func),
+          args: term.args
+        };
+      } else {
         return term;
-      case 'abstraction':
-        return substitute(term.func.expr, term.func.args[0], term.args[0]);
-      case 'application':
-        return {type: 'application', func: beta(term.func), args: term.args};
       }
     }
   }
@@ -548,7 +576,9 @@
       var current = input.value;
       if (previous === current) {
         evaluation = evaluation.map(function(term) {
-          return term.type === 'error' ? term : beta(term);
+          return term.type === 'error' || !reducible(term)
+            ? term
+            : reduce(term);
         });
       } else {
         previous = current;
@@ -557,7 +587,13 @@
         });
       }
       output.value = evaluation.map(function(term) {
-        return term.type === 'error' ? JSON.stringify(term) : pretty(term);
+        if (term.type === 'error') {
+          return JSON.stringify(term);
+        } else if (reducible(term)) {
+          return '...';
+        } else {
+          return pretty(term);
+        }
       }).join('\n\n');
     }, 10);
   }
