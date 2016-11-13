@@ -554,6 +554,45 @@
     }
   }
 
+  /**
+   * Returns an equivalent version of term where each abstraction or application
+   * term has as many arguments as possible.
+   */
+  function compress(term) {
+    switch (term.type) {
+    case 'variable':
+      return term;
+    case 'abstraction':
+      if (term.expr.type === 'abstraction') {
+        return compress({
+          type: 'abstraction',
+          args: term.args.concat(term.expr.args),
+          expr: term.expr.expr
+        });
+      } else {
+        return {
+          type: 'abstraction',
+          args: term.args,
+          expr: compress(term.expr)
+        };
+      }
+    case 'application':
+      if (term.func.type === 'application') {
+        return compress({
+          type: 'application',
+          func: term.func.func,
+          args: term.func.args.concat(term.args)
+        });
+      } else {
+        return {
+          type: 'application',
+          func: term.func,
+          args: term.args.map(compress)
+        };
+      }
+    }
+  }
+
   /** Returns a pretty-printed string version of the lambda term. */
   function pretty(term) {
     switch (term.type) {
@@ -592,7 +631,7 @@
         } else if (reducible(term)) {
           return '...';
         } else {
-          return pretty(term);
+          return pretty(compress(term));
         }
       }).join('\n\n');
     }, 10);
